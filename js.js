@@ -39,6 +39,7 @@ function Field(size, walls) {
 }
 
 function heuristicSearch() {
+    debugger;
     field.currNode = {F: Infinity};
     for (var i = field.opened.length - 1; i >= 0; i--) {
         if (field.opened[i].F < field.currNode.F) {
@@ -52,7 +53,6 @@ function heuristicSearch() {
             if (!((i + j) % 2)) {
                 continue;
             }
-            debugger;
 
             if (isFree({
                     y: field.currNode.y + i,
@@ -67,7 +67,7 @@ function heuristicSearch() {
                     neighbour['H'] = Math.abs(neighbour.y - field.finishNode.y) + Math.abs(neighbour.x - field.finishNode.x);
                     neighbour['F'] = neighbour.G + neighbour.H;
                 }
-                if (field.currNode.parentNode && (neighbour.G < field.currNode.parentNode.G)) {
+                if (field.currNode.parentNode && (neighbour.G < field.currNode.parentNode.G)) {//TODO: Сравнивать с подсчитываемой заново G у соседа.
                     debugger;
                     field.currNode.parentNode = neighbour;
                     field.currNode['G'] = neighbour.G + 1;
