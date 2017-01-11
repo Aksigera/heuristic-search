@@ -33,13 +33,13 @@ function Field(size, walls) {
             this.nodes[y][x] = new Node(y, x);
         }
     }
+
     for (let i = walls.length - 1; i >= 0; i--) {
         window.view.fillCell(walls[i][1], walls[i][0], 'black');
     }
 }
 
 function heuristicSearch() {
-    debugger;
     field.currNode = {F: Infinity};
     for (var i = field.opened.length - 1; i >= 0; i--) {
         if (field.opened[i].F < field.currNode.F) {
@@ -59,16 +59,18 @@ function heuristicSearch() {
                     x: field.currNode.x + j
                 })) {
                 var neighbour = window.field.nodes[field.currNode.y + i][field.currNode.x + j];
-
+                debugger;
                 if (!neighbour.opened) {
                     neighbour.open();
                     neighbour.parentNode = field.currNode;
                     neighbour['G'] = field.currNode.G + 1;
                     neighbour['H'] = Math.abs(neighbour.y - field.finishNode.y) + Math.abs(neighbour.x - field.finishNode.x);
                     neighbour['F'] = neighbour.G + neighbour.H;
+                    window.view.ctx.fillText('G:' + neighbour.G, (neighbour.x + .1) * scale, (neighbour.y + .4) * scale);
+                    window.view.ctx.fillText('H:' + neighbour.H, (neighbour.x + .1) * scale, (neighbour.y + .8) * scale);
+
                 }
-                if (field.currNode.parentNode && (neighbour.G < field.currNode.parentNode.G)) {//TODO: Сравнивать с подсчитываемой заново G у соседа.
-                    debugger;
+                else if (field.currNode.parentNode && (neighbour.G > field.currNode.G)) {//TODO: Сравнивать с подсчитываемой заново G у соседа.
                     field.currNode.parentNode = neighbour;
                     field.currNode['G'] = neighbour.G + 1;
                     field.currNode.F = field.currNode.G + field.currNode.H;
@@ -86,6 +88,7 @@ function heuristicSearch() {
 }
 
 function isFree(node) {
+
     if (node.opened === 2) return false;
     var
         walls = window.field.walls,
@@ -124,6 +127,8 @@ function init(iterations, size, start, finish, walls = []) {
     field.startField.open();
     field.startField['G'] = 0;
     field.startField['F'] = Math.abs(field.startField.y - field.finishNode.y) + Math.abs(field.startField.x - field.finishNode.x);
+    view.fillCell(field.finishNode.x, field.finishNode.y, 'yellow');
+
 
     var timer = new Timer('Heuristic Search');
     for (window.iteration = iterations; iteration !== 0; iteration--) {
@@ -162,20 +167,22 @@ function View(size, scale) {
     this.ctx.strokeRect(0, 0, size * this.scale, size * this.scale);
     this.drawCell = function (col, row) {
         this.ctx.strokeRect(col * scale, row * scale, scale, scale);
-        window.view.ctx.fillText('y:' + row, (col + .2) * scale, (row + .4) * scale);
-        window.view.ctx.fillText('x:' + col, (col + .2) * scale, (row + .8) * scale);
+        // window.view.ctx.fillText('y:' + row, (col + .2) * scale, (row + .4) * scale);
+        // window.view.ctx.fillText('x:' + col, (col + .2) * scale, (row + .8) * scale);
+        // window.view.ctx.fillText('x:' + col, (col + .2) * scale, (row + .8) * scale);
     };
     this.fillCell = function (col, row, color = 'green') {
         this.ctx.fillStyle = color;
         this.ctx.fillRect(col * scale + 1, row * scale + 1, scale - 2, scale - 2);
 
         this.ctx.fillStyle = 'black';
-        window.view.ctx.fillText('y:' + row, (col + .2) * scale, (row + .4) * scale);
-        window.view.ctx.fillText('x:' + col, (col + .2) * scale, (row + .8) * scale);
+        // window.view.ctx.fillText('y:' + row, (col + .2) * scale, (row + .4) * scale);
+        // window.view.ctx.fillText('x:' + col, (col + .2) * scale, (row + .8) * scale);
+        // window.view.ctx.fillText('x:' + col, (col + .2) * scale, (row + .8) * scale);
     }
 }
 
-init(150, 12, [1, 1], [10, 10], [[10, 9], [8, 9], [6, 9], [4, 9], [2, 9], [1, 9], [0, 9]]);
+init(150, 12, [1, 1], [10, 10], [[11, 9], [10, 9], [9, 9], [8, 9], [6, 9], [4, 9], [2, 9], [1, 9], [0, 9]]);
 
 
 
