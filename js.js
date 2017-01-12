@@ -1,4 +1,7 @@
 const scale = 40;
+lastNode = null;
+error = false;
+
 NodeProto = {
     open: function () {
         this.index = field.opened.length;
@@ -9,6 +12,14 @@ NodeProto = {
     },
 
     close: function () {
+        if (error) {
+            debugger
+        }
+        for (var i = field.opened.length-1; i >= 0; i--) {
+            if (field.opened[i].index == this.index) {
+                field.opened.splice(i, 1);
+            }
+        }
         field.opened.splice(this.index, 1);
         this.opened = 2;
     }
@@ -40,12 +51,21 @@ function Field(size, walls) {
 }
 
 function heuristicSearch() {
-    field.currNode = {F: Infinity};
-    for (var i = field.opened.length - 1; i >= 0; i--) {
-        if (field.opened[i].F < field.currNode.F) {
-            field.currNode = field.opened[i];
+    var lowInd = field.opened.length - 1;
+    for (var i = lowInd; i >= 0; i--) {
+
+        if (field.opened[i].F < field.opened[lowInd].F) {
+            lowInd = i;
         }
     }
+    field.currNode = field.opened[lowInd];
+    console.log(field.currNode);
+    if (lastNode === field.currNode) {
+        error = true;
+        debugger
+    }
+    lastNode = field.currNode;
+
     field.currNode.close();
 
     for (let i = -1; i <= 1; i++) {
@@ -58,22 +78,25 @@ function heuristicSearch() {
                     y: field.currNode.y + i,
                     x: field.currNode.x + j
                 })) {
-                var neighbour = window.field.nodes[field.currNode.y + i][field.currNode.x + j];
-                debugger;
-                if (!neighbour.opened) {
-                    neighbour.open();
-                    neighbour.parentNode = field.currNode;
-                    neighbour['G'] = field.currNode.G + 1;
-                    neighbour['H'] = Math.abs(neighbour.y - field.finishNode.y) + Math.abs(neighbour.x - field.finishNode.x);
-                    neighbour['F'] = neighbour.G + neighbour.H;
-                    window.view.ctx.fillText('G:' + neighbour.G, (neighbour.x + .1) * scale, (neighbour.y + .4) * scale);
-                    window.view.ctx.fillText('H:' + neighbour.H, (neighbour.x + .1) * scale, (neighbour.y + .8) * scale);
-
+                var gScore = field.currNode.G + 1;
+                var gScoreIsBest = false;
+                var neighbor = window.field.nodes[field.currNode.y + i][field.currNode.x + j];
+                if (neighbor.opened === 0) {
+                    gScoreIsBest = true;
+                    neighbor.open();
+                    neighbor['H'] = Math.abs(neighbor.y - field.finishNode.y) + Math.abs(neighbor.x - field.finishNode.x);
                 }
-                else if (field.currNode.parentNode && (neighbour.G > field.currNode.G)) {//TODO: Сравнивать с подсчитываемой заново G у соседа.
-                    field.currNode.parentNode = neighbour;
-                    field.currNode['G'] = neighbour.G + 1;
-                    field.currNode.F = field.currNode.G + field.currNode.H;
+                else if (gScore < neighbor.G) {
+                    gScoreIsBest = true;
+                }
+
+                if (gScoreIsBest) {
+                    neighbor.parentNode = field.currNode;
+                    neighbor.G = gScore;
+                    neighbor.F = neighbor.G + neighbor.H;
+                    window.view.fillCell(neighbor.x, neighbor.y, 'green');
+                    window.view.ctx.fillText('G:' + neighbor.G, (neighbor.x + .1) * scale, (neighbor.y + .4) * scale);
+                    window.view.ctx.fillText('H:' + neighbor.H, (neighbor.x + .1) * scale, (neighbor.y + .8) * scale);
                 }
 
                 window.view.fillCell(field.currNode.x, field.currNode.y, 'red');
@@ -122,11 +145,11 @@ function init(iterations, size, start, finish, walls = []) {
 
     window.field = new Field(size, walls);
     field.finished = false;
-    field.startField = field.nodes[start[0]][start[1]];
+    field.startNode = field.nodes[start[0]][start[1]];
     field.finishNode = field.nodes[finish[0]][finish[1]];
-    field.startField.open();
-    field.startField['G'] = 0;
-    field.startField['F'] = Math.abs(field.startField.y - field.finishNode.y) + Math.abs(field.startField.x - field.finishNode.x);
+    field.startNode.open();
+    field.startNode['G'] = 0;
+    field.startNode['F'] = Math.abs(field.startNode.y - field.finishNode.y) + Math.abs(field.startNode.x - field.finishNode.x);
     view.fillCell(field.finishNode.x, field.finishNode.y, 'yellow');
 
 
@@ -145,17 +168,6 @@ function init(iterations, size, start, finish, walls = []) {
     timer.stop();
 }
 
-function Timer(name) {
-    var start = new Date();
-    return {
-        stop: function () {
-            var end = new Date();
-            var time = end.getTime() - start.getTime();
-            console.log('Timer:', name, 'finished in', time, 'ms');
-        }
-    }
-}
-
 function View(size, scale) {
     this.scale = scale;
     this.canvas = document.getElementById("canvas");
@@ -171,7 +183,7 @@ function View(size, scale) {
         // window.view.ctx.fillText('x:' + col, (col + .2) * scale, (row + .8) * scale);
         // window.view.ctx.fillText('x:' + col, (col + .2) * scale, (row + .8) * scale);
     };
-    this.fillCell = function (col, row, color = 'green') {
+    this.fillCell = function (col, row, color = 'pink') {
         this.ctx.fillStyle = color;
         this.ctx.fillRect(col * scale + 1, row * scale + 1, scale - 2, scale - 2);
 
@@ -182,7 +194,26 @@ function View(size, scale) {
     }
 }
 
-init(150, 12, [1, 1], [10, 10], [[11, 9], [10, 9], [9, 9], [8, 9], [6, 9], [4, 9], [2, 9], [1, 9], [0, 9]]);
+init(1500, 12, [1, 1], [10, 10], [
+    [11, 9],
+    [10, 9],
+    [9, 9],
+    [8, 9],
+    [6, 9],
+    [4, 9],
+    [2, 9],
+    [1, 9],
+    [0, 9]
+]);
 
 
-
+function Timer(name) {
+    var start = new Date();
+    return {
+        stop: function () {
+            var end = new Date();
+            var time = end.getTime() - start.getTime();
+            console.log('Timer:', name, 'finished in', time, 'ms');
+        }
+    }
+}
